@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -79,7 +80,6 @@
         let short = id.substring(0, 4);
         let count = 0;
         let index = 1;
-        // Revisamos cuántos jugadores tienen el mismo prefijo
         const allIds = Object.keys(players).sort();
         for (let pId of allIds) {
             if (pId.substring(0, 4) === short) {
@@ -124,7 +124,6 @@
             if (!hostConn && worldMap[data.cx][data.cy] === 2) {
                 worldMap[data.cx][data.cy] = 0;
                 notesCollected++;
-                if(notesCollected >= maxNotes) syncToAll();
                 syncToAll();
             }
         } else if (data.type === 'update') {
@@ -183,7 +182,7 @@
             document.getElementById('setup-controls').classList.add('hidden');
             document.getElementById('start-btn').classList.add('hidden');
             setInterval(() => {
-                if(hostConn.open) hostConn.send({ type: 'move', id: myId, x: posX, y: posY, isDead: isDead });
+                if(hostConn && hostConn.open) hostConn.send({ type: 'move', id: myId, x: posX, y: posY, isDead: isDead });
             }, 30);
         });
         hostConn.on('data', handleData);
@@ -233,7 +232,7 @@
     function handleMovement() {
         if(!gameStarted || isDead) return;
         
-        // Rotación con flechas (Izquierda/Derecha)
+        // CORRECCIÓN: Rotación corregida (Izquierda/A es rotación positiva, Derecha/D negativa en este sistema)
         if (keys['ArrowLeft'] || keys['KeyA']) {
             let oldDirX = dirX;
             dirX = dirX * Math.cos(rotSpeed) - dirY * Math.sin(rotSpeed);
@@ -251,7 +250,6 @@
             planeY = oldPlaneX * Math.sin(-rotSpeed) + planeY * Math.cos(-rotSpeed);
         }
 
-        // Caminar con flechas (Arriba/Abajo)
         let moveX = (keys['ArrowUp'] || keys['KeyW'] ? 1 : (keys['ArrowDown'] || keys['KeyS'] ? -1 : 0));
         let targetX = posX + dirX * moveSpeed * moveX;
         let targetY = posY + dirY * moveSpeed * moveX;
@@ -261,14 +259,12 @@
         
         players[myId].x = posX; players[myId].y = posY;
 
-        // Recoger notas
         let mx = Math.floor(posX), my = Math.floor(posY);
         if(worldMap[mx] && worldMap[mx][my] === 2) {
             let msg = { type: 'collect', cx: mx, cy: my };
             if (hostConn) hostConn.send(msg); else handleData(msg);
         }
 
-        // Slenderman IA
         if(!hostConn && slenderman.active) {
             let closest = null, minDist = 999;
             for(let id in players) {
@@ -298,7 +294,7 @@
         
         if(!gameStarted) {
             ctx.fillStyle = "white"; ctx.textAlign = "center"; 
-            ctx.fillText("MODO MULTIJUGADOR - USA FLECHAS PARA MOVERTE", w/2, h/2);
+            ctx.fillText("MODO MULTIJUGADOR - USA FLECHAS O WASD", w/2, h/2);
             requestAnimationFrame(render); return;
         }
 
